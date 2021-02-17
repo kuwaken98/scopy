@@ -1745,7 +1745,7 @@ void LogicAnalyzer::startStop(bool start)
 			if (oneShotOrStream) { // oneshot
 				do {
 					try {
-						m_m2kDigital->setKernelBuffersCountIn(4);
+						m_m2kDigital->setKernelBuffersCountIn(1);
 						break;
 					} catch (libm2k::m2k_exception &e) {
 						qDebug() << e.what();
@@ -1756,7 +1756,7 @@ void LogicAnalyzer::startStop(bool start)
 
 			} else { // streaming
 				const int minKernelBuffers = 4;
-				const int oneBufferMaxSize = 4 * 1024 * 1024; // 4M
+				const int oneBufferMaxSize = 2 * 1024 * 1024; // 2M
 
 				m_currentKernelBuffers = minKernelBuffers;
 
@@ -1797,7 +1797,9 @@ void LogicAnalyzer::startStop(bool start)
 				// If the buffer size is > 64 * 4M we need to cap the chunk_size to 4M
 				if (chunk_size > oneBufferMaxSize) {
 					chunk_size = oneBufferMaxSize;
+				}
 
+				if (bufferSizeAdjusted >= MAX_KERNEL_BUFFERS * oneBufferMaxSize) {
 					/* in this case if the sample rate is greater than 5M samples / s
 					 * warn that data might not be continuos
 					 * */
@@ -1861,6 +1863,8 @@ void LogicAnalyzer::startStop(bool start)
 				updateBufferPreviewer(0, m_lastCapturedSample);
 
 				if (!totalSamples && ui->runSingleWidget->runButtonChecked()) {
+					m_m2kDigital->stopAcquisition();
+
 					totalSamples = bufferSizeAdjusted;
 					absIndex = 0;
 
